@@ -1,5 +1,7 @@
 package mealplanner;
 
+import javax.xml.crypto.Data;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -9,10 +11,13 @@ class Meal {
     private final String category;
     private final String[] ingredients;
 
+    static int population;
+
     public Meal(String category, String name, String[] ingredients) {
         this.category = category;
         this.name = name;
         this.ingredients = ingredients;
+        population += 1;
     }
 
     public String getName() {
@@ -47,9 +52,10 @@ public class Main {
 
     public static Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
+    public static DatabaseConnection connection = DatabaseConnection.createDatabaseConnection();
 
-        ArrayList<Meal> listOfMeals = new ArrayList<>();
+
+    public static void main(String[] args) {
 
         // Main engine
         while (true) {
@@ -64,10 +70,22 @@ public class Main {
             switch (command) {
                 case "add" -> {
                     Meal meal = createMeal();
-                    listOfMeals.add(meal);
-                    System.out.println("The meal has been added!");
+                    try {
+                        connection.storeMeal(meal.getCategory(), meal.getName(), Meal.population);
+                        System.out.println("The meal has been added!");
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
-                case "show" -> Utils.showMeals(listOfMeals);
+                case "show" -> {
+//                    Utils.showMeals(listOfMeals);
+                    try {
+                        connection.readData();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                }
                 case "exit" -> {
                     System.out.println("Bye!");
                     return;
@@ -91,7 +109,7 @@ public class Main {
 
     private static String getCategoryInput() {
         String category;
-        while (true) {
+        do {
             System.out.println("Which meal do you want to add (breakfast, lunch, dinner)?");
             category = scanner.nextLine();
             if (category.isEmpty()) {
@@ -103,13 +121,13 @@ public class Main {
             } else {
                 break;
             }
-        }
+        } while (true);
         return category;
     }
 
     private static String getNameInput() {
         String name;
-        while (true) {
+        do {
             System.out.println("Input the meal's name:");
             name = scanner.nextLine();
             if (!containsOnlyLetters(name)) {
@@ -117,7 +135,7 @@ public class Main {
             } else {
                 break;
             }
-        }
+        } while (true);
         return name;
     }
 
@@ -127,7 +145,7 @@ public class Main {
         do {
             System.out.println("Input the ingredients:");
             ingredientsString = scanner.nextLine();
-            ingredients = ingredientsString.split(",");
+            ingredients = ingredientsString.split(", ");
         } while (!validateIngredients(ingredients));
         return ingredients;
     }
