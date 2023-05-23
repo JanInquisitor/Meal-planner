@@ -1,9 +1,8 @@
 package mealplanner;
 
-import javax.xml.crypto.Data;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 class Meal {
@@ -11,13 +10,10 @@ class Meal {
     private final String category;
     private final String[] ingredients;
 
-    static int population;
-
     public Meal(String category, String name, String[] ingredients) {
         this.category = category;
         this.name = name;
         this.ingredients = ingredients;
-        population += 1;
     }
 
     public String getName() {
@@ -28,9 +24,14 @@ class Meal {
         return category;
     }
 
-    public String[] getIngredients() {
-        return ingredients;
+    public String getIngredientsString() {
+        return String.join(", ", this.ingredients);
     }
+
+    public static String[] parseIngredientsString(String str) {
+        return str.split(",\\s*");
+    }
+
 
     public void printIngredients() {
         for (String ingredient : ingredients) {
@@ -47,6 +48,7 @@ class Meal {
                 '}';
     }
 }
+
 
 public class Main {
 
@@ -68,23 +70,39 @@ public class Main {
 
             // Execute the specified command.
             switch (command) {
+
                 case "add" -> {
+
+                    // Creates a meal object.
                     Meal meal = createMeal();
+
                     try {
-                        connection.storeMeal(meal.getCategory(), meal.getName(), Meal.population);
+                        // Add created meal to the database
+                        connection.storeMeal(meal.getCategory(), meal.getName());
+
+                        // Reads the created meal from the database and get the id
+                        int mealId = connection.getMealIdByName(meal.getName());
+
+                        // Add the ingredients to the database.
+                        connection.storeIngredients(meal.getIngredientsString(), mealId);
+
+                        // Confirms the user that the creation was successful.
                         System.out.println("The meal has been added!");
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
                 }
                 case "show" -> {
-//                    Utils.showMeals(listOfMeals);
+
                     try {
-                        connection.readData();
+
+                        List<Meal> meals = connection.getAllMeals();
+
+                        Utils.showMeals(meals);
+
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
-
                 }
                 case "exit" -> {
                     System.out.println("Bye!");
@@ -112,6 +130,7 @@ public class Main {
         do {
             System.out.println("Which meal do you want to add (breakfast, lunch, dinner)?");
             category = scanner.nextLine();
+            category.trim();
             if (category.isEmpty()) {
                 System.out.println("Wrong meal category! Choose from: breakfast, lunch, dinner.\n");
                 continue;
