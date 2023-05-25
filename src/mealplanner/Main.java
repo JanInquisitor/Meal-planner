@@ -6,14 +6,28 @@ import java.util.List;
 import java.util.Scanner;
 
 class Meal {
+    private final int id;
+
     private final String name;
     private final String category;
-    private final String[] ingredients;
+    private final IngredientList ingredients;
 
-    public Meal(String category, String name, String[] ingredients) {
+    public Meal(String category, String name, List<String> ingredientsList) {
+        this.id = Utils.generateRandomId();
         this.category = category;
         this.name = name;
-        this.ingredients = ingredients;
+        this.ingredients = new IngredientList(ingredientsList);
+    }
+
+    public Meal(String category, String name, String[] ingredientsList) {
+        this.id = Utils.generateRandomId();
+        this.category = category;
+        this.name = name;
+        this.ingredients = new IngredientList(ingredientsList);
+    }
+
+    public int getId() {
+        return this.id;
     }
 
     public String getName() {
@@ -24,29 +38,24 @@ class Meal {
         return category;
     }
 
-    public String getIngredientsString() {
-        return String.join(", ", this.ingredients);
+    public IngredientList getIngredients() {
+        return this.ingredients;
     }
 
     public static String[] parseIngredientsString(String str) {
         return str.split(",\\s*");
     }
 
-
     public void printIngredients() {
-        for (String ingredient : ingredients) {
+        for (String ingredient : ingredients.list.toArray(new String[0])) {
             System.out.println(ingredient);
         }
     }
 
-    @Override
-    public String toString() {
-        return "Meal{" +
-                "name='" + name + '\'' +
-                ", category='" + category + '\'' +
-                ", ingredients=" + Arrays.toString(ingredients) +
-                '}';
+    private static int generateMealId() {
+        return 0;
     }
+
 }
 
 
@@ -56,8 +65,9 @@ public class Main {
 
     public static DatabaseConnection connection = DatabaseConnection.createDatabaseConnection();
 
+    public static void main(String[] args) throws SQLException {
 
-    public static void main(String[] args) {
+        connection.createTables();
 
         // Main engine
         while (true) {
@@ -78,13 +88,15 @@ public class Main {
 
                     try {
                         // Add created meal to the database
-                        connection.storeMeal(meal.getCategory(), meal.getName());
+                        connection.storeMeal(meal.getCategory(), meal.getName(), meal.getId());
 
                         // Reads the created meal from the database and get the id
                         int mealId = connection.getMealIdByName(meal.getName());
 
+                        IngredientList ingredients = meal.getIngredients();
+
                         // Add the ingredients to the database.
-                        connection.storeIngredients(meal.getIngredientsString(), mealId);
+                        connection.storeIngredients(ingredients.getIngredientsString(), ingredients.getId(), mealId);
 
                         // Confirms the user that the creation was successful.
                         System.out.println("The meal has been added!");
@@ -160,13 +172,13 @@ public class Main {
 
     private static String[] getIngredients() {
         String ingredientsString;
-        String[] ingredients;
+        String[] ingredientsArr;
         do {
             System.out.println("Input the ingredients:");
             ingredientsString = scanner.nextLine();
-            ingredients = ingredientsString.split(", ");
-        } while (!validateIngredients(ingredients));
-        return ingredients;
+            ingredientsArr = ingredientsString.split(", ");
+        } while (!validateIngredients(ingredientsArr));
+        return ingredientsArr;
     }
 
     private static boolean validateIngredients(String[] ingredients) {

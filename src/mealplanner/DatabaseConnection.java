@@ -15,24 +15,26 @@ public class DatabaseConnection {
         return new DatabaseConnection();
     }
 
-    public void storeMeal(String category, String meal) throws SQLException {
+    public void storeMeal(String category, String meal, int mealId) throws SQLException {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
              // Insert created meal into database
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO meals (category, meal) VALUES (?, ?)")) {
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO meals (category, meal, meal_id) VALUES (?, ?, ?)")) {
 
             statement.setString(1, category);
             statement.setString(2, meal);
+            statement.setInt(3, mealId);
 
             statement.executeUpdate();
         }
     }
 
-    public void storeIngredients(String ingredient, int mealId) throws SQLException {
+    public void storeIngredients(String ingredient, int ingredientId,int mealId) throws SQLException {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO ingredients (ingredient, meal_id) VALUES (?, ?)")) {
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO ingredients (ingredient, ingredient_id ,meal_id) VALUES (?, ?, ?)")) {
 
             statement.setString(1, ingredient);
-            statement.setInt(2, mealId);
+            statement.setInt(2, ingredientId);
+            statement.setInt(3, mealId);
 
             statement.executeUpdate();
         }
@@ -80,9 +82,9 @@ public class DatabaseConnection {
         return null;
     }
 
-    public String[] getIngredientsById(int id) throws SQLException {
+    public String[] getIngredientsByMealId(int id) throws SQLException {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM ingredients WHERE ingredient_id = ?")) {
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM ingredients WHERE meal_id = ?")) {
 
             statement.setInt(1, id);
 
@@ -121,11 +123,11 @@ public class DatabaseConnection {
 
                 int mealId = resultSet.getInt("meal_id");
 
-                String ingredientsString = this.getIngredientsById(mealId)[0];
+                String ingredientsString = this.getIngredientsByMealId(mealId)[0];
 
                 String[] ingredientsArray = Meal.parseIngredientsString(ingredientsString);
 
-                Meal meal = new Meal(category, mealName, ingredientsArray);
+                Meal meal = new Meal(category, mealName, List.of(ingredientsArray));
 
                 mealsList.add(meal);
             }
@@ -160,6 +162,27 @@ public class DatabaseConnection {
             ingredientsResultSet.close();
         }
     }
+
+    public void createTables() throws SQLException {
+        try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
+             Statement statement = connection.createStatement()) {
+
+            // Creating 'meals' table
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS meals (\n" +
+                    "  category VARCHAR(255),\n" +
+                    "  meal VARCHAR(255),\n" +
+                    "  meal_id INT\n" +
+                    ")");
+
+            // Creating 'ingredients' table
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS ingredients (\n" +
+                    "  ingredient VARCHAR(255),\n" +
+                    "  ingredient_id INT,\n" +
+                    "  meal_id INT\n" +
+                    ")");
+        }
+    }
+
 
     public void createAndPrintMealsTable() throws SQLException {
         // Create a Properties object and set the properties
