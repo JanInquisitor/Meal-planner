@@ -17,6 +17,11 @@ public class IngredientList {
         this.list = List.of(ingredientsArray);
     }
 
+    public IngredientList(String ingredientsString, int id) {
+        this.id = id;
+        this.list = List.of(Meal.parseIngredientsString(ingredientsString));
+    }
+
 
     public int getId() {
         return id;

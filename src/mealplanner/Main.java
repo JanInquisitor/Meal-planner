@@ -1,7 +1,6 @@
 package mealplanner;
 
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -24,6 +23,13 @@ class Meal {
         this.category = category;
         this.name = name;
         this.ingredients = new IngredientList(ingredientsList);
+    }
+
+    public Meal(String category, String name, IngredientList ingredientsList) {
+        this.id = Utils.generateRandomId();
+        this.category = category;
+        this.name = name;
+        this.ingredients = ingredientsList;
     }
 
     public int getId() {
@@ -50,12 +56,8 @@ class Meal {
         for (String ingredient : ingredients.list.toArray(new String[0])) {
             System.out.println(ingredient);
         }
+        System.out.println("");
     }
-
-    private static int generateMealId() {
-        return 0;
-    }
-
 }
 
 
@@ -65,8 +67,16 @@ public class Main {
 
     public static DatabaseConnection connection = DatabaseConnection.createDatabaseConnection();
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) {
+        try {
+            // Main loop of the program
+            mainEngine();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    private static void mainEngine() throws SQLException {
         connection.createTables();
 
         // Main engine
@@ -86,35 +96,23 @@ public class Main {
                     // Creates a meal object.
                     Meal meal = createMeal();
 
-                    try {
-                        // Add created meal to the database
-                        connection.storeMeal(meal.getCategory(), meal.getName(), meal.getId());
+                    // Add created meal to the database
+                    connection.storeMeal(meal.getCategory(), meal.getName(), meal.getId());
 
-                        // Reads the created meal from the database and get the id
-                        int mealId = connection.getMealIdByName(meal.getName());
+                    // Reads the created meal from the database and get the id
+                    int mealId = connection.getMealIdByName(meal.getName());
 
-                        IngredientList ingredients = meal.getIngredients();
+                    IngredientList ingredients = meal.getIngredients();
 
-                        // Add the ingredients to the database.
-                        connection.storeIngredients(ingredients.getIngredientsString(), ingredients.getId(), mealId);
+                    // Add the ingredients to the database.
+                    connection.storeIngredients(ingredients.getIngredientsString(), ingredients.getId(), mealId);
 
-                        // Confirms the user that the creation was successful.
-                        System.out.println("The meal has been added!");
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
+                    // Confirms the user that the creation was successful.
+                    System.out.println("The meal has been added!");
+
                 }
                 case "show" -> {
-
-                    try {
-
-                        List<Meal> meals = connection.getAllMeals();
-
-                        Utils.showMeals(meals);
-
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
+                    showCommand();
                 }
                 case "exit" -> {
                     System.out.println("Bye!");
@@ -125,7 +123,20 @@ public class Main {
             }
 
         } // End of loop
+    }
 
+    private static void showCommand() throws SQLException {
+        do {
+            System.out.println("Which category do you want to print (breakfast, lunch, dinner)?");
+            String category = scanner.nextLine();
+            if (category.isEmpty() || (category.equals("breakfast") || category.equals("lunch") || category.equals("dinner"))) {
+                List<Meal> meals = connection.getMealsByCategory(category);
+                Utils.showMealsByCategory(meals, category);
+                break;
+            } else {
+                System.out.println("Wrong meal category! Choose from: breakfast, lunch, dinner.");
+            }
+        } while (true);
     }
 
     public static Meal createMeal() {
@@ -142,7 +153,6 @@ public class Main {
         do {
             System.out.println("Which meal do you want to add (breakfast, lunch, dinner)?");
             category = scanner.nextLine();
-            category.trim();
             if (category.isEmpty()) {
                 System.out.println("Wrong meal category! Choose from: breakfast, lunch, dinner.\n");
                 continue;

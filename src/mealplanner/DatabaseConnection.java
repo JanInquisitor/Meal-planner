@@ -28,7 +28,7 @@ public class DatabaseConnection {
         }
     }
 
-    public void storeIngredients(String ingredient, int ingredientId,int mealId) throws SQLException {
+    public void storeIngredients(String ingredient, int ingredientId, int mealId) throws SQLException {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
              PreparedStatement statement = connection.prepareStatement("INSERT INTO ingredients (ingredient, ingredient_id ,meal_id) VALUES (?, ?, ?)")) {
 
@@ -82,7 +82,7 @@ public class DatabaseConnection {
         return null;
     }
 
-    public String[] getIngredientsByMealId(int id) throws SQLException {
+    public IngredientList getIngredientsByMealId(int id) throws SQLException {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM ingredients WHERE meal_id = ?")) {
 
@@ -98,13 +98,48 @@ public class DatabaseConnection {
 
                     int ingredientId = resultSet.getInt("ingredient_id");
 
-                    return new String[]{ingredientString, String.valueOf(mealId), String.valueOf(ingredientId)};
+                    return new IngredientList(ingredientString, ingredientId);
                 }
 
             }
         }
 
         return null;
+    }
+
+
+    public List<Meal> getMealsByCategory(String category) throws SQLException {
+
+        List<Meal> mealsList = new ArrayList<>();
+
+        try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM meals WHERE category = ?")) {
+
+            statement.setString(1, category);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+
+                while (resultSet.next()) {
+
+                    String mealName = resultSet.getString("meal");
+
+                    String mealCategory = resultSet.getString("category");
+
+                    int mealId = resultSet.getInt("meal_id");
+
+                    IngredientList ingredientList = this.getIngredientsByMealId(mealId);
+
+                    Meal meal = new Meal(mealCategory, mealName, ingredientList);
+
+                    mealsList.add(meal);
+
+                }
+
+            }
+
+        }
+
+        return mealsList;
     }
 
     public List<Meal> getAllMeals() throws SQLException {
@@ -123,11 +158,9 @@ public class DatabaseConnection {
 
                 int mealId = resultSet.getInt("meal_id");
 
-                String ingredientsString = this.getIngredientsByMealId(mealId)[0];
+                IngredientList ingredientList = this.getIngredientsByMealId(mealId);
 
-                String[] ingredientsArray = Meal.parseIngredientsString(ingredientsString);
-
-                Meal meal = new Meal(category, mealName, List.of(ingredientsArray));
+                Meal meal = new Meal(category, mealName, ingredientList);
 
                 mealsList.add(meal);
             }
