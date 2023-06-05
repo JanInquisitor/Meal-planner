@@ -6,7 +6,6 @@ import java.util.Scanner;
 
 class Meal {
     private final int id;
-
     private final String name;
     private final String category;
     private final IngredientList ingredients;
@@ -56,7 +55,16 @@ class Meal {
         for (String ingredient : ingredients.list.toArray(new String[0])) {
             System.out.println(ingredient);
         }
-        System.out.println("");
+    }
+
+    @Override
+    public String toString() {
+        return "Meal{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", category='" + category + '\'' +
+                ", ingredients=" + ingredients +
+                '}';
     }
 }
 
@@ -100,7 +108,7 @@ public class Main {
                     connection.storeMeal(meal.getCategory(), meal.getName(), meal.getId());
 
                     // Reads the created meal from the database and get the id
-                    int mealId = connection.getMealIdByName(meal.getName());
+                    int mealId = connection.getMealIdByName(meal.getName()); // @TODO: I could just use the Meal object I just created for this step..lol
 
                     IngredientList ingredients = meal.getIngredients();
 
@@ -114,6 +122,9 @@ public class Main {
                 case "show" -> {
                     showCommand();
                 }
+                case "plan" -> {
+                    planCommand();
+                }
                 case "exit" -> {
                     System.out.println("Bye!");
                     return;
@@ -123,6 +134,11 @@ public class Main {
             }
 
         } // End of loop
+    }
+
+    private static void planCommand() throws SQLException {
+        Plan plan = Planning.createPlan();
+        Planning.printWeekPlan(plan);
     }
 
     private static void showCommand() throws SQLException {
@@ -186,7 +202,7 @@ public class Main {
         do {
             System.out.println("Input the ingredients:");
             ingredientsString = scanner.nextLine();
-            ingredientsArr = ingredientsString.split(", ");
+            ingredientsArr = ingredientsString.split(",");
         } while (!validateIngredients(ingredientsArr));
         return ingredientsArr;
     }
@@ -207,6 +223,7 @@ public class Main {
     }
 
     private static boolean containsOnlyLetters(String str) {
-        return str.matches("[a-zA-Z]+( [a-zA-Z]+)?");
+        return str.matches("[a-zA-Z]+( [a-zA-Z]+)*");
     }
+
 }

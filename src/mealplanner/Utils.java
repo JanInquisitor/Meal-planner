@@ -16,10 +16,9 @@ public class Utils {
     }
 
     public static void showAvailableCommands() {
-        System.out.println("What would you like to do (add, show, exit)?");
+        System.out.println("What would you like to do (add, show, plan, exit)?");
     }
 
-    // @TODO: Make this method generic, and I mean make an alternative one that can print any type of object, maybe or maybe not I don't know.
     public static void showMeals(List<Meal> meals) {
         if (meals.size() == 0) {
             System.out.println("No meals found.");
@@ -27,9 +26,9 @@ public class Utils {
         }
         for (Meal meal : meals) {
 //            System.out.println("Category: " + meal.getCategory());
-            System.out.println("Name: " + meal.getName());
-            System.out.println("Ingredients: ");
-            meal.printIngredients();
+            System.out.println(meal.getName());
+//            System.out.println("Ingredients: ");
+//            meal.printIngredients();
         }
     }
 
@@ -45,8 +44,9 @@ public class Utils {
         for (Meal meal : meals) {
 //            System.out.println("Category: " + meal.getCategory());
             System.out.println("Name: " + meal.getName());
-            System.out.println("Ingredients: ");
+            System.out.println("Ingredients:");
             meal.printIngredients();
+            System.out.println("");
         }
     }
 }

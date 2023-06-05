@@ -56,7 +56,7 @@ public class DatabaseConnection {
         return -1;
     }
 
-    public String[] getMealById(int id) throws SQLException {
+    public Meal getMealById(int id) throws SQLException {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM meals WHERE meal_id = ?")) {
 
@@ -66,13 +66,15 @@ public class DatabaseConnection {
 
                 if (resultSet.next()) {
 
-                    String meal = resultSet.getString("meal");
+                    String mealName = resultSet.getString("meal");
 
                     String category = resultSet.getString("category");
 
                     int mealId = resultSet.getInt("meal_id");
 
-                    return new String[]{meal, category, String.valueOf(mealId)};
+                    IngredientList ingredients = this.getIngredientsByMealId(mealId);
+
+                    return new Meal(category, mealName, ingredients);
 
                 }
             }
@@ -94,7 +96,7 @@ public class DatabaseConnection {
 
                     String ingredientString = resultSet.getString("ingredient");
 
-                    int mealId = resultSet.getInt("meal_id");
+//                    int mealId = resultSet.getInt("meal_id");
 
                     int ingredientId = resultSet.getInt("ingredient_id");
 
@@ -114,6 +116,40 @@ public class DatabaseConnection {
 
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM meals WHERE category = ?")) {
+
+            statement.setString(1, category);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+
+                while (resultSet.next()) {
+
+                    String mealName = resultSet.getString("meal");
+
+                    String mealCategory = resultSet.getString("category");
+
+                    int mealId = resultSet.getInt("meal_id");
+
+                    IngredientList ingredientList = this.getIngredientsByMealId(mealId);
+
+                    Meal meal = new Meal(mealCategory, mealName, ingredientList);
+
+                    mealsList.add(meal);
+
+                }
+
+            }
+
+        }
+
+        return mealsList;
+    }
+
+    public List<Meal> getMealsByCategoryOrdered(String category) throws SQLException {
+
+        List<Meal> mealsList = new ArrayList<>();
+
+        try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM meals WHERE category = ? ORDER BY meal")) {
 
             statement.setString(1, category);
 
@@ -170,29 +206,16 @@ public class DatabaseConnection {
         return mealsList;
     }
 
-    public void readData() throws SQLException {
+    // This method save individual plans (or days)
+    public void saveDayPlanToDb(String mealName, String category, int mealId) throws SQLException {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
-             Statement statement = connection.createStatement()) {
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO plan (meal_option, meal_category, meal_id) VALUES (?, ?, ?)")) {
 
-            // Read data from 'meals' table
-            ResultSet mealsResultSet = statement.executeQuery("SELECT * FROM meals");
-            while (mealsResultSet.next()) {
-                String category = mealsResultSet.getString("category");
-                String meal = mealsResultSet.getString("meal");
-                int mealId = mealsResultSet.getInt("meal_id");
-                System.out.println("Category: " + category + ", Meal: " + meal + ", Meal ID: " + mealId);
-            }
-            mealsResultSet.close();
+            statement.setString(1, mealName);
+            statement.setString(2, category);
+            statement.setInt(3, mealId);
 
-            // Read data from 'ingredients' table
-            ResultSet ingredientsResultSet = statement.executeQuery("SELECT * FROM ingredients");
-            while (ingredientsResultSet.next()) {
-                String ingredient = ingredientsResultSet.getString("ingredient");
-                int ingredientId = ingredientsResultSet.getInt("ingredient_id");
-                int mealId = ingredientsResultSet.getInt("meal_id");
-                System.out.println("Ingredient: " + ingredient + ", Ingredient ID: " + ingredientId + ", Meal ID: " + mealId);
-            }
-            ingredientsResultSet.close();
+            statement.executeUpdate();
         }
     }
 
@@ -213,6 +236,14 @@ public class DatabaseConnection {
                     "  ingredient_id INT,\n" +
                     "  meal_id INT\n" +
                     ")");
+
+            // Creating 'plan' table
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS plan (\n" +
+                    "  meal_option VARCHAR(255),\n" +
+                    "  meal_category VARCHAR(255),\n" +
+                    "  meal_id INT\n" +
+                    ")");
+
         }
     }
 
