@@ -16,7 +16,7 @@ public class Utils {
     }
 
     public static void showAvailableCommands() {
-        System.out.println("What would you like to do (add, show, plan, exit)?");
+        System.out.println("What would you like to do (add, show, plan, save, exit)?");
     }
 
     public static void showMeals(List<Meal> meals) {

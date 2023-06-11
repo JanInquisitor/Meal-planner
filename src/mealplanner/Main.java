@@ -1,5 +1,6 @@
 package mealplanner;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
@@ -31,6 +32,13 @@ class Meal {
         this.ingredients = ingredientsList;
     }
 
+    public Meal(int id, String category, String name, IngredientList ingredientsList) {
+        this.id = id;
+        this.category = category;
+        this.name = name;
+        this.ingredients = ingredientsList;
+    }
+
     public int getId() {
         return this.id;
     }
@@ -44,7 +52,7 @@ class Meal {
     }
 
     public IngredientList getIngredients() {
-        return this.ingredients;
+        return ingredients;
     }
 
     public static String[] parseIngredientsString(String str) {
@@ -57,6 +65,7 @@ class Meal {
         }
     }
 
+
     @Override
     public String toString() {
         return "Meal{" +
@@ -68,25 +77,39 @@ class Meal {
     }
 }
 
-
 public class Main {
 
     public static Scanner scanner = new Scanner(System.in);
 
     public static DatabaseConnection connection = DatabaseConnection.createDatabaseConnection();
 
+    public static Plan plan;
+
     public static void main(String[] args) {
         try {
+            connection.createTables();
+
+            Plan previousPlan = null;
+
+            try {
+                previousPlan = connection.getPlans();
+            } catch (SQLException e) {
+                // ignore
+            }
+
+            if (previousPlan != null) {
+                plan = previousPlan;
+            }
+
             // Main loop of the program
             mainEngine();
-        } catch (SQLException e) {
+
+        } catch (SQLException | IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void mainEngine() throws SQLException {
-        connection.createTables();
-
+    private static void mainEngine() throws SQLException, IOException {
         // Main engine
         while (true) {
 
@@ -105,7 +128,7 @@ public class Main {
                     Meal meal = createMeal();
 
                     // Add created meal to the database
-                    connection.storeMeal(meal.getCategory(), meal.getName(), meal.getId());
+                    connection.add(meal);
 
                     // Reads the created meal from the database and get the id
                     int mealId = connection.getMealIdByName(meal.getName()); // @TODO: I could just use the Meal object I just created for this step..lol
@@ -113,7 +136,7 @@ public class Main {
                     IngredientList ingredients = meal.getIngredients();
 
                     // Add the ingredients to the database.
-                    connection.storeIngredients(ingredients.getIngredientsString(), ingredients.getId(), mealId);
+                    connection.storeIngredients(ingredients, mealId);
 
                     // Confirms the user that the creation was successful.
                     System.out.println("The meal has been added!");
@@ -124,6 +147,9 @@ public class Main {
                 }
                 case "plan" -> {
                     planCommand();
+                }
+                case "save" -> {
+                    saveCommand();
                 }
                 case "exit" -> {
                     System.out.println("Bye!");
@@ -136,9 +162,21 @@ public class Main {
         } // End of loop
     }
 
+    private static void saveCommand() throws SQLException, IOException {
+        if (isMealPlanReady()) {
+            System.out.println("Input a filename:");
+            String filename = scanner.nextLine();
+            Save.saveShoppingList(filename, plan);
+        } else {
+            System.out.println("Unable to save. Plan your meals first.");
+        }
+
+    }
+
     private static void planCommand() throws SQLException {
-        Plan plan = Planning.createPlan();
+        plan = Planning.createPlan();
         Planning.printWeekPlan(plan);
+        connection.savePlan(plan);
     }
 
     private static void showCommand() throws SQLException {
@@ -225,5 +263,10 @@ public class Main {
     private static boolean containsOnlyLetters(String str) {
         return str.matches("[a-zA-Z]+( [a-zA-Z]+)*");
     }
+
+    private static boolean isMealPlanReady() {
+        return plan != null;
+    }
+
 
 }

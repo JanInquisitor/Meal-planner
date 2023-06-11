@@ -27,6 +27,10 @@ public class IngredientList {
         return id;
     }
 
+    public List<String> getList() {
+        return list;
+    }
+
     public String getIngredientsString() {
         return String.join(", ", list);
     }
