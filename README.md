@@ -8,6 +8,7 @@ This is a command-line application that allows you to manage and plan your meals
 
 - Java Development Kit (JDK) 8 or later
 - Command-line interface or terminal
+- A database server
 
 ## Getting Started
 
